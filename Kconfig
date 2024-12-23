@@ -1,0 +1,19 @@
+config ZMK_RAW_HID
+    bool "Enable Raw HID"
+    default n
+
+config ZMK_RAW_HID_USAGE_PAGE
+    hex "Raw HID Usage Page"
+    default 0xFF60
+
+config ZMK_RAW_HID_USAGE
+    hex "Raw HID Usage"
+    default 0x61
+
+config ZMK_RAW_HID_DEVICE
+    string "Raw HID Device"
+    default HID_1
+
+module = ZMK_RAW_HID
+module-str = ZMK_RAW_HID
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
