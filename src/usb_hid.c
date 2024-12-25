@@ -30,7 +30,7 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
         return -ENOTSUP;
     }
 
-    process_raw_hid_data(*data, *len);
+    process_raw_hid_data(*data);
 
     return 0;
 }

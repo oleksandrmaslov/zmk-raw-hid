@@ -18,7 +18,7 @@ static const uint8_t raw_hid_report_desc[] = {
     HID_LOGICAL_MIN8(0x00),
     HID_LOGICAL_MAX16(0xFF, 0x00),
     HID_REPORT_SIZE(0x08),
-    HID_REPORT_COUNT(32),
+    HID_REPORT_COUNT(CONFIG_RAW_HID_REPORT_SIZE),
 
     HID_USAGE(0x01),
     HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS),
@@ -30,4 +30,4 @@ static const uint8_t raw_hid_report_desc[] = {
     HID_END_COLLECTION,
 };
 
-void process_raw_hid_data(uint8_t *data, uint8_t length);
+void process_raw_hid_data(uint8_t *data);

@@ -66,7 +66,7 @@ static ssize_t write_hids_raw_hid_report(struct bt_conn *conn, const struct bt_g
     }
 
     uint8_t *data = (uint8_t *)buf;
-    process_raw_hid_data(data, len);
+    process_raw_hid_data(data);
 
     return len;
 }
