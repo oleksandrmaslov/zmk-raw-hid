@@ -1,11 +1,11 @@
-zephyr_library()
+if (CONFIG_RAW_HID)
+  zephyr_library()
 
-if ((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-  zephyr_library_sources_ifdef(CONFIG_ZMK_RAW_HID src/raw-hid/raw_hid.c)
-  zephyr_library_sources_ifdef(CONFIG_ZMK_RAW_HID src/raw-hid/usb_hid.c)
+  zephyr_library_sources(src/raw_hid.c)
+  zephyr_library_sources(src/usb_hid.c)
 
   if (CONFIG_ZMK_BLE)
-    zephyr_library_sources_ifdef(CONFIG_ZMK_RAW_HID src/raw-hid/hog.c)
+    zephyr_library_sources(src/hog.c)
   endif()
 
   zephyr_include_directories(include)

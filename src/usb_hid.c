@@ -1,7 +1,7 @@
-#include <zmk/raw-hid/raw_hid.h>
+#include <raw_hid/raw_hid.h>
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(raw_hid, CONFIG_ZMK_RAW_HID_LOG_LEVEL);
+LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 static const struct device *raw_hid_dev;
 
@@ -42,7 +42,7 @@ static const struct hid_ops ops = {
 };
 
 static int raw_hid_init(void) {
-    raw_hid_dev = device_get_binding(CONFIG_ZMK_RAW_HID_DEVICE);
+    raw_hid_dev = device_get_binding(CONFIG_RAW_HID_DEVICE);
     if (raw_hid_dev == NULL) {
         LOG_ERR("Unable to locate HID device");
         return -EINVAL;

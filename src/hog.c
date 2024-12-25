@@ -1,9 +1,9 @@
-#include <zmk/raw-hid/raw_hid.h>
+#include <raw_hid/raw_hid.h>
 
 #include <zephyr/bluetooth/gatt.h>
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(raw_hid, CONFIG_ZMK_RAW_HID_LOG_LEVEL);
+LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 enum {
     HIDS_REMOTE_WAKE = BIT(0),
