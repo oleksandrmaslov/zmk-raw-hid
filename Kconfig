@@ -1,5 +1,6 @@
 config RAW_HID
     bool "Enable Raw HID"
+    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
     default n
 
 config RAW_HID_USAGE_PAGE
