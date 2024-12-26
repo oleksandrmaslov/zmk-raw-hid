@@ -1,4 +1,5 @@
 #include <raw_hid/raw_hid.h>
+#include <raw_hid/events.h>
 
 #include <zephyr/bluetooth/gatt.h>
 
@@ -66,7 +67,7 @@ static ssize_t write_hids_raw_hid_report(struct bt_conn *conn, const struct bt_g
     }
 
     uint8_t *data = (uint8_t *)buf;
-    process_raw_hid_data(data);
+    raise_raw_hid_received_event((struct raw_hid_received_event){.data = data, .length = len});
 
     return len;
 }

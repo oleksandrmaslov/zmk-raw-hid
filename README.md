@@ -47,7 +47,21 @@ include:
 
 ## Adding support in other modules
 
-Just override `void process_raw_hid_data(uint8_t *data);` function with your own communication logic.
+Subscribe to `raw_hid_received_event` and implement your own listener:
+
+```c
+static int raw_hid_received_event_listener(const zmk_event_t *eh) {
+    struct raw_hid_received_event *event = as_raw_hid_received_event(eh);
+    if (event) {
+        // do something
+    }
+
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(process_raw_hid_event, raw_hid_received_event_listener);
+ZMK_SUBSCRIPTION(process_raw_hid_event, raw_hid_received_event);
+```
 
 ## Configuration
 

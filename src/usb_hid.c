@@ -1,4 +1,5 @@
 #include <raw_hid/raw_hid.h>
+#include <raw_hid/events.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -30,7 +31,7 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
         return -ENOTSUP;
     }
 
-    process_raw_hid_data(*data);
+    raise_raw_hid_received_event((struct raw_hid_received_event){.data = *data, .length = *len});
 
     return 0;
 }

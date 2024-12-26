@@ -29,5 +29,3 @@ static const uint8_t raw_hid_report_desc[] = {
 
     HID_END_COLLECTION,
 };
-
-void process_raw_hid_data(uint8_t *data);
