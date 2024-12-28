@@ -4,7 +4,7 @@ This [ZMK module](https://zmk.dev/docs/features/modules) enables Raw HID functio
 
 ## Features
 
-It allows one way communication from host computer to keyboard over HID interface. Both USB and BT connections are supported.
+It allows bidirectional communication between host computer and keyboard over HID interface. Both USB and BT connections are supported.
 
 Example usage - [display widget](https://github.com/zzeneg/zmk-nice-view-hid) with HID support, which can accept data from computer using [companion app](https://github.com/zzeneg/qmk-hid-host) and display current time/layout/volume.
 

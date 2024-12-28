@@ -1,6 +1,8 @@
 #include <raw_hid/raw_hid.h>
 #include <raw_hid/events.h>
 
+#include <zmk/ble.h>
+
 #include <zephyr/bluetooth/gatt.h>
 
 #include <zephyr/logging/log.h>
@@ -34,9 +36,14 @@ enum {
     HIDS_FEATURE = 0x03,
 };
 
-static struct hids_report raw_hid_report = {
+static struct hids_report raw_hid_report_output = {
     .id = 0x00,
     .type = HIDS_OUTPUT,
+};
+
+static struct hids_report raw_hid_report_input = {
+    .id = 0x00,
+    .type = HIDS_INPUT,
 };
 
 static uint8_t ctrl_point;
@@ -67,6 +74,8 @@ static ssize_t write_hids_raw_hid_report(struct bt_conn *conn, const struct bt_g
     }
 
     uint8_t *data = (uint8_t *)buf;
+    LOG_INF("BT - Received Raw HID report of length %i", len);
+    LOG_HEXDUMP_DBG(data, len, "BT - Received Raw HID report");
     raise_raw_hid_received_event((struct raw_hid_received_event){.data = data, .length = len});
 
     return len;
@@ -95,16 +104,63 @@ BT_GATT_SERVICE_DEFINE(
     BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT_MAP, BT_GATT_CHRC_READ, BT_GATT_PERM_READ_ENCRYPT,
                            read_hids_raw_hid_report_map, NULL, NULL),
 
+    // send to host
+    BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
+                           BT_GATT_PERM_READ_ENCRYPT, NULL, NULL, NULL),
+    BT_GATT_CCC(NULL, BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_WRITE_ENCRYPT),
+    BT_GATT_DESCRIPTOR(BT_UUID_HIDS_REPORT_REF, BT_GATT_PERM_READ_ENCRYPT, read_hids_report_ref,
+                       NULL, &raw_hid_report_input),
+
+    // receive from host
     BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT,
                            BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE | BT_GATT_CHRC_WRITE_WITHOUT_RESP,
                            BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_WRITE_ENCRYPT, NULL,
                            write_hids_raw_hid_report, NULL),
-
     BT_GATT_DESCRIPTOR(BT_UUID_HIDS_REPORT_REF, BT_GATT_PERM_READ_ENCRYPT, read_hids_report_ref,
-                       NULL, &raw_hid_report),
+                       NULL, &raw_hid_report_output),
 
     BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_CTRL_POINT, BT_GATT_CHRC_WRITE_WITHOUT_RESP,
                            BT_GATT_PERM_WRITE, NULL, write_ctrl_point, &ctrl_point));
+
+static void send_report(const uint8_t *data, uint8_t len) {
+    struct bt_conn *conn = zmk_ble_active_profile_conn();
+    if (conn == NULL) {
+        LOG_ERR("Not connected to active profile");
+        return;
+    }
+
+    LOG_INF("BT - Sending Raw HID report of length %i", len);
+    uint8_t report[CONFIG_RAW_HID_REPORT_SIZE] = {0};
+    memcpy(report, data, len);
+    LOG_HEXDUMP_DBG(report, CONFIG_RAW_HID_REPORT_SIZE, "BT - Sending Raw HID report");
+
+    struct bt_gatt_notify_params notify_params = {
+        .attr = &raw_hog_svc.attrs[5],
+        .data = &report,
+        .len = CONFIG_RAW_HID_REPORT_SIZE,
+    };
+
+    int err = bt_gatt_notify_cb(conn, &notify_params);
+    if (err == -EPERM) {
+        bt_conn_set_security(conn, BT_SECURITY_L2);
+    } else if (err) {
+        LOG_ERR("Error notifying %d", err);
+    }
+
+    bt_conn_unref(conn);
+}
+
+static int raw_hid_sent_event_listener(const zmk_event_t *eh) {
+    struct raw_hid_sent_event *event = as_raw_hid_sent_event(eh);
+    if (event) {
+        send_report(event->data, event->length);
+    }
+
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(bt_process_raw_hid_sent_event, raw_hid_sent_event_listener);
+ZMK_SUBSCRIPTION(bt_process_raw_hid_sent_event, raw_hid_sent_event);
 
 K_THREAD_STACK_DEFINE(raw_hog_q_stack, CONFIG_ZMK_BLE_THREAD_STACK_SIZE);
 
