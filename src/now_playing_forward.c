@@ -1,5 +1,5 @@
 #include <zmk/event_manager.h>
-#include <include/raw_hid/events.h>
+#include <raw_hid/events.h>
 #include <zmk/split/slave_request.h>
 
 #if defined(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
