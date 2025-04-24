@@ -1,7 +1,6 @@
 #include <zmk/event_manager.h>
 #include <raw_hid/events.h>
 #include <zmk/split/transport/central.h>
-#include <zmk/split/transport/types.h>
 
 #if defined(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 static int forward_raw_hid(const zmk_event_t *eh) {
