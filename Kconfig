@@ -1,6 +1,6 @@
 config RAW_HID
     bool "Enable Raw HID"
-    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
+    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL || ZMK_SPLIT_ROLE_PERIPHERAL
     imply USB_DEVICE_HID
 
 config RAW_HID_USAGE_PAGE
