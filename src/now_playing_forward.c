@@ -1,3 +1,4 @@
+#include <raw_hid/events.h>          /* <-- add this */
 #include <zmk/event_manager.h>               /* zmk_event_t, listener macros */
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>                 /* STRUCT_SECTION_FOREACH()     */
