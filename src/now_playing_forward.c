@@ -1,6 +1,7 @@
 #include <zmk/event_manager.h>
 #include <raw_hid/events.h>
 #include <zmk/split/transport/central.h>
+#include <string.h>                    /* <- for memcpy  */
 
 #if defined(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 static int forward_raw_hid(const zmk_event_t *eh) {
@@ -8,7 +9,10 @@ static int forward_raw_hid(const zmk_event_t *eh) {
     if (!evt) return ZMK_EV_EVENT_BUBBLE;
 
     /* build and send the transport command */
-    struct zmk_split_transport_central_command cmd = {0};
+  /* pass the transport pointer, not NULL */
+if (active_transport) {
+      active_transport->api->send_command(active_transport, cmd);
+}
     cmd.type = ZMK_SPLIT_TRANSPORT_CENTRAL_CMD_TYPE_RAW_HID;
     memcpy(cmd.data.raw_hid.data, evt->data, evt->length);
 
