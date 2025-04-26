@@ -25,9 +25,7 @@ static int forward_raw_hid(const zmk_event_t *eh)
     LOG_DBG("forward RAW-HID id 0x%02X len %d", ev->data[0], ev->length);
 
     /* broadcast to every registered central transport */
-    STRUCT_SECTION_FOREACH(zmk_split_transport_central, t) {
-        t->api->send_command(0 /* src-id */, cmd);
-    }
+    zmk_split_central_send_command(cmd);
     return 0;
 }
 
