@@ -44,8 +44,10 @@ static int now_playing_forwarder(const zmk_event_t *eh) {
             char packet[32] = {0};
             snprintf(packet, sizeof(packet), "%s - %s", curr_title, curr_artist);
             // Send 32-byte raw HID report to peripheral
-            raw_hid_send((uint8_t *)packet, sizeof(packet));
-
+        raise_raw_hid_sent_event((struct raw_hid_sent_event){
+            .data   = (uint8_t *)packet,
+            .length = sizeof(packet),
+        });
             // Save as last sent track
             strncpy(last_artist, curr_artist, sizeof(last_artist)-1);
             strncpy(last_title,  curr_title,  sizeof(last_title)-1);
