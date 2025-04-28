@@ -1,6 +1,6 @@
-// File: now_playing_forwarder.c (central)
 #include <zmk/event_manager.h>
-#include <raw_hid/raw_hid.h>
+#include <raw_hid/events.h>    // ← for the raw_hid_received_event / raw_hid_sent_event structs and ZMK_EVENT_DECLARE() :contentReference[oaicite:0]{index=0}
+#include <raw_hid/raw_hid.h>   // ← for raw_hid_send(), descriptor, etc. :contentReference[oaicite:1]{index=1}
 #include <string.h>
 
 #define HID_TYPE_MEDIA_ARTIST 0xAD  // QMK HID companion media artist tag&#8203;:contentReference[oaicite:3]{index=3}
