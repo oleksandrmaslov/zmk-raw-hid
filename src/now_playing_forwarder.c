@@ -1,6 +1,6 @@
 // File: now_playing_forwarder.c (central)
 #include <zmk/event_manager.h>
-#include <zmk/raw_hid.h>
+#include <raw_hid/raw_hid.h>
 #include <string.h>
 
 #define HID_TYPE_MEDIA_ARTIST 0xAD  // QMK HID companion media artist tag&#8203;:contentReference[oaicite:3]{index=3}
