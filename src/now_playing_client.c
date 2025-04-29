@@ -5,7 +5,7 @@
 #include <zephyr/logging/log.h>
 #include <raw_hid/events.h>
 
-LOG_MODULE_REGISTER(zmk, CONFIG_ZMK_LOG_LEVEL);
+LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 // Static subscription parameters
 static struct bt_gatt_subscribe_params sub_params;
