@@ -4,8 +4,27 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-// Subscription parameters (zero-init)
-static struct bt_gatt_subscribe_params sub_params = {0};
+// Notify callback as a normal C function
+static uint8_t notify_cb(struct bt_conn *conn,
+                         struct bt_gatt_subscribe_params *params,
+                         const void *data, uint16_t length)
+{
+    if (data && length) {
+        raise_raw_hid_received_event((struct raw_hid_received_event){
+            .data   = (uint8_t *)data,
+            .length = length,
+        });
+    }
+    return BT_GATT_ITER_CONTINUE;
+}
+
+// Subscription parameters (zero-init, set notify_cb)
+static struct bt_gatt_subscribe_params sub_params = {
+    .value_handle = 0,   // will be set when we discover the characteristic
+    .ccc_handle   = 0,   // ditto
+    .notify       = notify_cb,
+    .value        = BT_GATT_CCC_NOTIFY,
+};
 
 // When we see a GATT Report characteristic, subscribe to it
 static uint8_t discover_cb(struct bt_conn *conn,
@@ -13,29 +32,20 @@ static uint8_t discover_cb(struct bt_conn *conn,
                            struct bt_gatt_discover_params *dp)
 {
     if (!attr) {
-        LOG_ERR("Report characteristic not found");
+        LOG_ERR("HID Report characteristic not found");
         return BT_GATT_ITER_STOP;
     }
 
     const struct bt_gatt_chrc *chrc = attr->user_data;
     if (bt_uuid_cmp(chrc->uuid, BT_UUID_HIDS_REPORT) == 0) {
-        sub_params.ccc_handle   = chrc->value_handle + 1;
         sub_params.value_handle = chrc->value_handle;
-        sub_params.notify       = [](struct bt_conn *c, struct bt_gatt_subscribe_params *p,
-                                    const void *data, uint16_t len) {
-            if (data && len) {
-                raise_raw_hid_received_event((struct raw_hid_received_event){
-                    .data   = (uint8_t *)data,
-                    .length = len
-                });
-            }
-            return BT_GATT_ITER_CONTINUE;
-        };
+        sub_params.ccc_handle   = chrc->value_handle + 1;
+
         int err = bt_gatt_subscribe(conn, &sub_params);
         if (err) {
             LOG_ERR("Subscribe failed: %d", err);
         } else {
-            LOG_INF("Subscribed to Now Playing reports");
+            LOG_INF("Subscribed to Now Playing HID reports");
         }
         return BT_GATT_ITER_STOP;
     }
