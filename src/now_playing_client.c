@@ -1,6 +1,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zmk/event_manager.h>
+#include <zmk/events/split_peripheral_status_changed.h>  // <-- make sure this is here
 #include <raw_hid/events.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -59,7 +60,7 @@ static uint8_t discover_cb(struct bt_conn *conn,
 }
 
 // Kick off discovery when split-peripheral connects
-static void on_split_status(const struct zmk_event_split_peripheral_status_changed *ev)
+static void on_split_status(const struct zmk_split_peripheral_status_changed *ev)
 {
     if (!ev->connected) {
         return;
@@ -75,4 +76,5 @@ static void on_split_status(const struct zmk_event_split_peripheral_status_chang
     bt_gatt_discover(bt_conn_ref(ev->conn), &disc_params);
 }
 
-ZMK_SUBSCRIPTION(on_split_status, raw_hid_received_event);  // or use split_peripheral_status_changed
+// subscribe to the *correct* event name (no “event” prefix):
+ZMK_SUBSCRIPTION(on_split_status, zmk_split_peripheral_status_changed);
