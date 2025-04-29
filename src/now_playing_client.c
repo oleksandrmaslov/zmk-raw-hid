@@ -1,10 +1,26 @@
+// File: src/now_playing_client.c
+
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/gatt.h>
-#include <raw_hid/events.h>
 #include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
+#include <raw_hid/events.h>
 
-// Notify callback as a normal C function
+LOG_MODULE_REGISTER(zmk, CONFIG_ZMK_LOG_LEVEL);
+
+// Static subscription parameters
+static struct bt_gatt_subscribe_params sub_params;
+
+// Forward declarations
+static uint8_t notify_cb(struct bt_conn *conn,
+                         struct bt_gatt_subscribe_params *params,
+                         const void *data, uint16_t length);
+static uint8_t discover_cb(struct bt_conn *conn,
+                           const struct bt_gatt_attr *attr,
+                           struct bt_gatt_discover_params *dp);
+static void connected_cb(struct bt_conn *conn, uint8_t err);
+static void disconnected_cb(struct bt_conn *conn, uint8_t reason);
+
+// 1) Notification handler: fire raw_hid_received_event when data arrives
 static uint8_t notify_cb(struct bt_conn *conn,
                          struct bt_gatt_subscribe_params *params,
                          const void *data, uint16_t length)
@@ -18,15 +34,7 @@ static uint8_t notify_cb(struct bt_conn *conn,
     return BT_GATT_ITER_CONTINUE;
 }
 
-// Subscription parameters (zero-init, set notify_cb)
-static struct bt_gatt_subscribe_params sub_params = {
-    .value_handle = 0,   // will be set when we discover the characteristic
-    .ccc_handle   = 0,   // ditto
-    .notify       = notify_cb,
-    .value        = BT_GATT_CCC_NOTIFY,
-};
-
-// When we see a GATT Report characteristic, subscribe to it
+// 2) Discovery callback: look for the HID Report characteristic
 static uint8_t discover_cb(struct bt_conn *conn,
                            const struct bt_gatt_attr *attr,
                            struct bt_gatt_discover_params *dp)
@@ -40,6 +48,8 @@ static uint8_t discover_cb(struct bt_conn *conn,
     if (bt_uuid_cmp(chrc->uuid, BT_UUID_HIDS_REPORT) == 0) {
         sub_params.value_handle = chrc->value_handle;
         sub_params.ccc_handle   = chrc->value_handle + 1;
+        sub_params.notify       = notify_cb;
+        sub_params.value        = BT_GATT_CCC_NOTIFY;
 
         int err = bt_gatt_subscribe(conn, &sub_params);
         if (err) {
@@ -49,21 +59,21 @@ static uint8_t discover_cb(struct bt_conn *conn,
         }
         return BT_GATT_ITER_STOP;
     }
+
     return BT_GATT_ITER_CONTINUE;
 }
 
-// Called by Zephyr on every new connection
-static void bt_connected(struct bt_conn *conn, uint8_t err)
+// 3) Connection callback: kick off GATT discovery when link comes up
+static void connected_cb(struct bt_conn *conn, uint8_t err)
 {
     if (err) {
         LOG_ERR("Connection failed (err %u)", err);
         return;
     }
 
-    // Kick off GATT discovery for the HID Report char
     static struct bt_gatt_discover_params dp;
-    dp.uuid        = BT_UUID_HIDS_REPORT;
-    dp.func        = discover_cb;
+    dp.uuid         = BT_UUID_HIDS_REPORT;
+    dp.func         = discover_cb;
     dp.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
     dp.end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE;
     dp.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
@@ -76,12 +86,16 @@ static void bt_connected(struct bt_conn *conn, uint8_t err)
     }
 }
 
-// Register our connection callbacks
+// 4) Disconnection callback: reset our subscribe state
+static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
+{
+    memset(&sub_params, 0, sizeof(sub_params));
+    LOG_INF("Disconnected (reason %u)", reason);
+}
+
+// 5) Register our BLE connection callbacks
 static struct bt_conn_cb conn_callbacks = {
-    .connected    = bt_connected,
-    .disconnected = [](struct bt_conn *conn, uint8_t reason) {
-        memset(&sub_params, 0, sizeof(sub_params));
-        LOG_INF("Disconnected (reason %u)", reason);
-    },
+    .connected    = connected_cb,
+    .disconnected = disconnected_cb,
 };
 BT_CONN_CB_DEFINE(conn_callbacks);
