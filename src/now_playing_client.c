@@ -2,14 +2,16 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zmk/event_manager.h>
-#include <zmk/events/split_peripheral_status_changed.h>
+#include <zmk/events/split_peripheral_status_changed.h>  
 #include <zmk/split/bluetooth/peripheral.h>
 #include <zmk/ble.h>
 #include <raw_hid/events.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
+// Compile only in the peripheral half:
 #if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+
 // HID Service and Report Characteristic UUIDs
 static struct bt_uuid_16 hid_svc_uuid  = BT_UUID_INIT_16(BT_UUID_HIDS_VAL);
 static struct bt_uuid_16 report_uuid   = BT_UUID_INIT_16(BT_UUID_HIDS_REPORT_VAL);
@@ -64,7 +66,7 @@ static uint8_t discover_cb(struct bt_conn *conn,
 }
 
 /* Start discovery on split-peripheral connect */
-static void on_split_status(const zmk_split_peripheral_status_changed *ev)
+static void on_split_status(const struct zmk_split_peripheral_status_changed *ev)
 {
     if (!ev->connected) {
         return;
@@ -93,4 +95,4 @@ static void on_split_status(const zmk_split_peripheral_status_changed *ev)
 ZMK_LISTENER(npf_client, on_split_status);
 ZMK_SUBSCRIPTION(npf_client, zmk_split_peripheral_status_changed);
 
-#endif /* CONFIG_ZMK_SPLIT && !CONFIG_ZMK_SPLIT_ROLE_CENTRAL */
+#endif /* peripheral-only guard */
