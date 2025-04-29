@@ -1,3 +1,9 @@
+/*
+ * now_playing_client.c — Now Playing HID client for split peripheral
+ * Peripheral side: subscribes to HID Report characteristic on central half
+ * to receive "Now Playing" packets and raise raw HID events.
+ */
+
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
@@ -13,8 +19,7 @@ static struct bt_uuid_16 report_uuid = BT_UUID_INIT_16(BT_UUID_HIDS_REPORT_VAL);
 /* GATT subscribe and discovery parameters */
 static struct bt_gatt_subscribe_params subscribe_params = {
     .ccc_handle = 0,
-    .value = BT_GATT_CCC_NOTIFY,
-    .end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE,
+    .value      = BT_GATT_CCC_NOTIFY,
 };
 
 static struct bt_gatt_discover_params discover_params;
