@@ -1,7 +1,14 @@
 /*
- * now_playing_client.c — Now Playing HID client for split peripheral
- * Peripheral side: subscribes to HID Report characteristic on central half
- * to receive "Now Playing" packets and raise raw HID events.
+ * now_playing_client.c — "Now Playing" HID client for split peripherals
+ *
+ * Peripheral-side module for a split-keyboard setup. Listens for BLE
+ * connections from the central half, discovers and subscribes to the
+ * HID-Over-GATT Report characteristic that carries "Now Playing"
+ * media packets, and raises raw_hid_received_event events for display
+ * widgets to render.
+ *
+ * Build guard: Included only when CONFIG_ZMK_SPLIT is enabled and
+ * CONFIG_ZMK_SPLIT_ROLE_CENTRAL is disabled.
  */
 
 #include <zephyr/logging/log.h>
@@ -13,15 +20,16 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 
-/* UUID for HID Report characteristic */
+/* UUID: HID-Over-GATT Report characteristic for "Now Playing" packets */
 static struct bt_uuid_16 report_uuid = BT_UUID_INIT_16(BT_UUID_HIDS_REPORT_VAL);
 
-/* GATT subscribe and discovery parameters */
+/* GATT subscription parameters */
 static struct bt_gatt_subscribe_params subscribe_params = {
     .ccc_handle = 0,
     .value      = BT_GATT_CCC_NOTIFY,
 };
 
+/* GATT discovery parameters */
 static struct bt_gatt_discover_params discover_params;
 
 /* Notification callback: dispatch raw HID received event */
@@ -29,7 +37,7 @@ static uint8_t notify_cb(struct bt_conn *conn,
                          struct bt_gatt_subscribe_params *params,
                          const void *data, uint16_t length)
 {
-    if (data && length) {
+    if (data && length > 0) {
         raise_raw_hid_received_event((struct raw_hid_received_event){
             .data   = (uint8_t *)data,
             .length = length,
@@ -55,7 +63,7 @@ static uint8_t discover_cb(struct bt_conn *conn,
 
         int err = bt_gatt_subscribe(conn, &subscribe_params);
         if (err) {
-            LOG_ERR("Subscribe failed: %d", err);
+            LOG_ERR("Subscription failed (err %d)", err);
         } else {
             LOG_INF("Subscribed to Now Playing HID reports");
         }
@@ -64,14 +72,14 @@ static uint8_t discover_cb(struct bt_conn *conn,
     return BT_GATT_ITER_CONTINUE;
 }
 
-/* Connection callback: start GATT discovery upon split-peripheral connect */
+/* Connection callback: initiate discovery when BLE link is established */
 static void connected_cb(struct bt_conn *conn, uint8_t err)
 {
     if (err) {
         LOG_WRN("BLE connection error: %u", err);
         return;
     }
-    LOG_INF("Split peripheral connected, discovering HID Report characteristic");
+    LOG_INF("Peripheral connected: discovering HID Report characteristic");
 
     discover_params.uuid         = &report_uuid.uuid;
     discover_params.func         = discover_cb;
@@ -81,13 +89,13 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 
     err = bt_gatt_discover(conn, &discover_params);
     if (err) {
-        LOG_ERR("GATT discovery failed: %d", err);
+        LOG_ERR("GATT discovery failed (err %d)", err);
     }
 }
 
+/* Register connection callbacks */
 BT_CONN_CB_DEFINE(conn_callbacks) = {
     .connected = connected_cb,
 };
 
 #endif /* CONFIG_ZMK_SPLIT && !CONFIG_ZMK_SPLIT_ROLE_CENTRAL */
-
