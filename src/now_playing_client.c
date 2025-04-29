@@ -41,20 +41,18 @@ static uint8_t discover_cb(struct bt_conn *conn,
         return BT_GATT_ITER_STOP;
     }
 
-    // Found the characteristic: attr->handle is the value handle
-    sub_params.notify   = notify_cb;
-    sub_params.value    = BT_GATT_CCC_NOTIFY;
-    sub_params.value_handle = bt_gatt_attr_value_handle(attr);
+    uint16_t value_handle = bt_gatt_attr_value_handle(attr);
 
-    // CCC descriptor is the next attribute
-    sub_params.ccc_handle   = params->end_handle; // often attr->handle + 1
-    sub_params.end_handle   = params->end_handle;
-    sub_params.start_handle = params->start_handle;
+    sub_params.notify        = notify_cb;
+    sub_params.value         = BT_GATT_CCC_NOTIFY;
+    sub_params.value_handle  = value_handle;
+    sub_params.ccc_handle    = value_handle + 1;  // CCC descriptor is right after the value
 
-    if (bt_gatt_subscribe(conn, &sub_params) == 0) {
+    int err = bt_gatt_subscribe(conn, &sub_params);
+    if (!err) {
         LOG_INF("Subscribed to HID notifications");
     } else {
-        LOG_ERR("Failed to subscribe");
+        LOG_ERR("Failed to subscribe (%d)", err);
     }
 
     return BT_GATT_ITER_STOP;
@@ -68,11 +66,11 @@ static void on_split_status(const struct zmk_event_split_peripheral_status_chang
     }
 
     // Discover HID service → report char
-    disc_params.uuid       = &uuid_hids.uuid;
-    disc_params.type       = BT_GATT_DISCOVER_CHARACTERISTIC;
+    disc_params.uuid         = &uuid_hids.uuid;
+    disc_params.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
     disc_params.start_handle = 0x0001;
     disc_params.end_handle   = 0xffff;
-    disc_params.func       = discover_cb;
+    disc_params.func         = discover_cb;
 
     bt_gatt_discover(bt_conn_ref(ev->conn), &disc_params);
 }
