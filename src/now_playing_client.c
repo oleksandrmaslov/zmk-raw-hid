@@ -9,8 +9,7 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-
+#if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 // HID Service and Report Characteristic UUIDs
 static struct bt_uuid_16 hid_svc_uuid  = BT_UUID_INIT_16(BT_UUID_HIDS_VAL);
 static struct bt_uuid_16 report_uuid   = BT_UUID_INIT_16(BT_UUID_HIDS_REPORT_VAL);
@@ -94,4 +93,4 @@ static void on_split_status(const zmk_split_peripheral_status_changed *ev)
 ZMK_LISTENER(npf_client, on_split_status);
 ZMK_SUBSCRIPTION(npf_client, zmk_split_peripheral_status_changed);
 
-#endif /* CONFIG_ZMK_SPLIT_ROLE_CENTRAL */
+#endif /* CONFIG_ZMK_SPLIT && !CONFIG_ZMK_SPLIT_ROLE_CENTRAL */
