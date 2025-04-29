@@ -1,113 +1,77 @@
-/*
- * now_playing_client.c — "Now Playing" HID client for split peripherals
- *
- * Peripheral-side module for a split-keyboard setup. Listens for BLE
- * connections from the central half, discovers and subscribes to the
- * HID-Over-GATT Report characteristic that carries "Now Playing"
- * media packets, and raises raw_hid_received_event events for display
- * widgets to render.
- *
- * Build guard: Included only when CONFIG_ZMK_SPLIT is enabled and
- * CONFIG_ZMK_SPLIT_ROLE_CENTRAL is disabled.
- */
-
-#include <zephyr/logging/log.h>
-#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <raw_hid/events.h>
-
+#include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+// Subscription parameters (zero-init)
+static struct bt_gatt_subscribe_params sub_params = {0};
 
-/* UUID: HID-Over-GATT Report characteristic for "Now Playing" packets */
-static struct bt_uuid_16 report_uuid = BT_UUID_INIT_16(BT_UUID_HIDS_REPORT_VAL);
-
-/* Forward declaration for notify_cb */
-static uint8_t notify_cb(struct bt_conn *conn,
-                         struct bt_gatt_subscribe_params *params,
-                         const void *data, uint16_t length);
-
-/* GATT subscription parameters */
-static struct bt_gatt_subscribe_params subscribe_params = {
-    .ccc_handle   = 0, // set in discover_cb (value_handle + 1)
-    .value        = BT_GATT_CCC_NOTIFY,
-};
-
-/* GATT discovery parameters */
-static struct bt_gatt_discover_params discover_params;
-
-/* Notification callback: dispatch raw HID received event */
-static uint8_t notify_cb(struct bt_conn *conn,
-                         struct bt_gatt_subscribe_params *params,
-                         const void *data, uint16_t length)
-{
-    if (data && length > 0) {
-        raise_raw_hid_received_event((struct raw_hid_received_event){
-            .data   = (uint8_t *)data,
-            .length = length,
-        });
-    }
-    return BT_GATT_ITER_CONTINUE;
-}
-
-/* Discovery callback: subscribe to the found Report characteristic */
+// When we see a GATT Report characteristic, subscribe to it
 static uint8_t discover_cb(struct bt_conn *conn,
                            const struct bt_gatt_attr *attr,
-                           struct bt_gatt_discover_params *params)
+                           struct bt_gatt_discover_params *dp)
 {
     if (!attr) {
-        LOG_ERR("HID Report characteristic not found");
+        LOG_ERR("Report characteristic not found");
         return BT_GATT_ITER_STOP;
     }
 
     const struct bt_gatt_chrc *chrc = attr->user_data;
-    if (!bt_uuid_cmp(chrc->uuid, &report_uuid.uuid)) {
-        subscribe_params.value_handle = chrc->value_handle;
-        subscribe_params.ccc_handle   = chrc->value_handle + 1;
-        subscribe_params.notify       = notify_cb;
-
-        int err = bt_gatt_subscribe(conn, &subscribe_params);
+    if (bt_uuid_cmp(chrc->uuid, BT_UUID_HIDS_REPORT) == 0) {
+        sub_params.ccc_handle   = chrc->value_handle + 1;
+        sub_params.value_handle = chrc->value_handle;
+        sub_params.notify       = [](struct bt_conn *c, struct bt_gatt_subscribe_params *p,
+                                    const void *data, uint16_t len) {
+            if (data && len) {
+                raise_raw_hid_received_event((struct raw_hid_received_event){
+                    .data   = (uint8_t *)data,
+                    .length = len
+                });
+            }
+            return BT_GATT_ITER_CONTINUE;
+        };
+        int err = bt_gatt_subscribe(conn, &sub_params);
         if (err) {
-            LOG_ERR("Subscription failed (err %d)", err);
+            LOG_ERR("Subscribe failed: %d", err);
         } else {
-            LOG_INF("Subscribed to Now Playing HID reports");
+            LOG_INF("Subscribed to Now Playing reports");
         }
         return BT_GATT_ITER_STOP;
     }
     return BT_GATT_ITER_CONTINUE;
 }
 
-/* Connection callback: initiate discovery when BLE link is established */
-static void connected_cb(struct bt_conn *conn, uint8_t err)
+// Called by Zephyr on every new connection
+static void bt_connected(struct bt_conn *conn, uint8_t err)
 {
     if (err) {
-        LOG_WRN("BLE connection error: %u", err);
-        return;
-    }
-    LOG_INF("Peripheral connected: discovering HID Report characteristic");
-
-    // Use the actual peripheral connection
-    conn = zmk_split_bt_peripheral_conn();
-    if (!conn) {
-        LOG_ERR("No peripheral BLE connection");
+        LOG_ERR("Connection failed (err %u)", err);
         return;
     }
 
-    discover_params.uuid         = &report_uuid.uuid;
-    discover_params.func         = discover_cb;
-    discover_params.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
-    discover_params.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
+    // Kick off GATT discovery for the HID Report char
+    static struct bt_gatt_discover_params dp;
+    dp.uuid        = BT_UUID_HIDS_REPORT;
+    dp.func        = discover_cb;
+    dp.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
+    dp.end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE;
+    dp.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
 
-    int res = bt_gatt_discover(conn, &discover_params);
-    if (res) {
-        LOG_ERR("GATT discovery failed (err %d)", res);
+    int d_err = bt_gatt_discover(conn, &dp);
+    if (d_err) {
+        LOG_ERR("Discover failed: %d", d_err);
+    } else {
+        LOG_INF("Discovering Now Playing HID report");
     }
 }
 
-/* Register connection callbacks */
-BT_CONN_CB_DEFINE(conn_callbacks) = {
-    .connected = connected_cb,
+// Register our connection callbacks
+static struct bt_conn_cb conn_callbacks = {
+    .connected    = bt_connected,
+    .disconnected = [](struct bt_conn *conn, uint8_t reason) {
+        memset(&sub_params, 0, sizeof(sub_params));
+        LOG_INF("Disconnected (reason %u)", reason);
+    },
 };
-
-#endif /* CONFIG_ZMK_SPLIT && !CONFIG_ZMK_SPLIT_ROLE_CENTRAL */
+BT_CONN_CB_DEFINE(conn_callbacks);
