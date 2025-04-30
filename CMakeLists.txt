@@ -8,11 +8,6 @@ if (CONFIG_RAW_HID)
     zephyr_library_sources(src/hog.c)
     zephyr_library_sources(src/now_playing_forwarder.c)
   endif()
-  
-if (CONFIG_ZMK_SPLIT AND NOT CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-  zephyr_library_sources(src/now_playing_client.c)
-  zephyr_library_sources(src/ble_security.c)
-endif()
 
   zephyr_include_directories(include)
   zephyr_include_directories(${APPLICATION_SOURCE_DIR}/include)
