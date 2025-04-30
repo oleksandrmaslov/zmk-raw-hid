@@ -1,5 +1,6 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
+#include <zephyr/bluetooth/uuid.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(ble_security, LOG_LEVEL_INF);
@@ -24,7 +25,12 @@ static void sec_on_connected(struct bt_conn *conn, uint8_t err) {
     }
 }
 
-// Wait for encryption to actually take place
+/* Make a real, static bt_uuid_16 object */
+static struct bt_uuid_16 raw_hid_uuid = BT_UUID_INIT_16(BT_UUID_HIDS_REPORT_VAL);
+
+/* GATT discovery params — no initializer here */
+static struct bt_gatt_discover_params dp;
+
 static void sec_on_security_changed(struct bt_conn *conn,
                                     bt_security_t level,
                                     enum bt_security_err err) {
@@ -36,15 +42,13 @@ static void sec_on_security_changed(struct bt_conn *conn,
         // Not encrypted yet; wait for next callback
         return;
     }
-    // Now safe to discover & subscribe
-    static struct bt_gatt_discover_params dp = {
-        .uuid         = BT_UUID_HIDS_REPORT,
-        .start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE,
-        .end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE,
-        .type         = BT_GATT_DISCOVER_CHARACTERISTIC,
-        .func         = raw_hid_discover_cb,
-    };
-    rc = bt_gatt_discover(conn, &dp);
+    /* Fill dp at runtime so we only use compile-time constants above */
+    dp.uuid         = &raw_hid_uuid.uuid;
+    dp.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
+    dp.end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE;
+    dp.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
+    dp.func         = raw_hid_discover_cb;
+    int rc = bt_gatt_discover(conn, &dp);
     if (rc) {
         LOG_ERR("HID discovery failed: %d", rc);
     }
