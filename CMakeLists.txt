@@ -11,6 +11,7 @@ if (CONFIG_RAW_HID)
   
 if (CONFIG_ZMK_SPLIT AND NOT CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   zephyr_library_sources(src/now_playing_client.c)
+  zephyr_library_sources(src/ble_security.c)
 endif()
 
   zephyr_include_directories(include)
