@@ -7,24 +7,14 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-// Static subscription parameters
-static struct bt_gatt_subscribe_params sub_params;
+static struct bt_conn *current_conn;
+static struct bt_gatt_discover_params disc_params;
+static struct bt_gatt_subscribe_params subscribe_params;
 
-// Forward declarations
+// Notify callback
 static uint8_t notify_cb(struct bt_conn *conn,
                          struct bt_gatt_subscribe_params *params,
-                         const void *data, uint16_t length);
-static uint8_t discover_cb(struct bt_conn *conn,
-                           const struct bt_gatt_attr *attr,
-                           struct bt_gatt_discover_params *dp);
-static void connected_cb(struct bt_conn *conn, uint8_t err);
-static void disconnected_cb(struct bt_conn *conn, uint8_t reason);
-
-// 1) Notification handler: fire raw_hid_received_event when data arrives
-static uint8_t notify_cb(struct bt_conn *conn,
-                         struct bt_gatt_subscribe_params *params,
-                         const void *data, uint16_t length)
-{
+                         const void *data, uint16_t length) {
     if (data && length) {
         raise_raw_hid_received_event((struct raw_hid_received_event){
             .data   = (uint8_t *)data,
@@ -34,66 +24,79 @@ static uint8_t notify_cb(struct bt_conn *conn,
     return BT_GATT_ITER_CONTINUE;
 }
 
-// 2) Discovery callback: look for the HID Report characteristic
-static uint8_t discover_cb(struct bt_conn *conn,
-                           const struct bt_gatt_attr *attr,
-                           struct bt_gatt_discover_params *dp)
-{
+// Descriptor discovery callback
+static uint8_t discover_desc_cb(struct bt_conn *conn,
+                                const struct bt_gatt_attr *attr,
+                                struct bt_gatt_discover_params *dp) {
     if (!attr) {
-        LOG_ERR("HID Report characteristic not found");
+        LOG_ERR("CCCD not found");
         return BT_GATT_ITER_STOP;
     }
+    LOG_INF("Found CCCD handle: 0x%04x", attr->handle);
 
-    const struct bt_gatt_chrc *chrc = attr->user_data;
-    if (bt_uuid_cmp(chrc->uuid, BT_UUID_HIDS_REPORT) == 0) {
-        sub_params.value_handle = chrc->value_handle;
-        sub_params.ccc_handle   = chrc->value_handle + 1;
-        sub_params.notify       = notify_cb;
-        sub_params.value        = BT_GATT_CCC_NOTIFY;
+    subscribe_params.ccc_handle = attr->handle;
+    subscribe_params.notify     = notify_cb;
+    subscribe_params.value      = BT_GATT_CCC_NOTIFY;
 
-        int err = bt_gatt_subscribe(conn, &sub_params);
-        if (err) {
-            LOG_ERR("Subscribe failed: %d", err);
-        } else {
-            LOG_INF("Subscribed to Now Playing HID reports");
-        }
-        return BT_GATT_ITER_STOP;
+    int err = bt_gatt_subscribe(conn, &subscribe_params);
+    if (err && err != -EALREADY) {
+        LOG_ERR("Subscribe failed: %d", err);
+    } else {
+        LOG_INF("Subscribed to Raw HID notifications");
     }
-
-    return BT_GATT_ITER_CONTINUE;
+    return BT_GATT_ITER_STOP;
 }
 
-// 3) Connection callback: kick off GATT discovery when link comes up
-static void connected_cb(struct bt_conn *conn, uint8_t err)
-{
+// Characteristic discovery callback
+static uint8_t discover_char_cb(struct bt_conn *conn,
+                                const struct bt_gatt_attr *attr,
+                                struct bt_gatt_discover_params *dp) {
+    if (!attr) {
+        LOG_ERR("HID Report char not found");
+        return BT_GATT_ITER_STOP;
+    }
+    const struct bt_gatt_chrc *chrc = attr->user_data;
+    subscribe_params.value_handle = chrc->value_handle;
+
+    // Kick off CCCD discovery
+    static struct bt_gatt_discover_params dp_desc;
+    dp_desc.uuid         = BT_UUID_GATT_CCC;
+    dp_desc.func         = discover_desc_cb;
+    dp_desc.start_handle = chrc->value_handle + 1;
+    dp_desc.end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE;
+    dp_desc.type         = BT_GATT_DISCOVER_DESCRIPTOR;
+    bt_gatt_discover(conn, &dp_desc);
+    return BT_GATT_ITER_STOP;
+}
+
+// Connection callback
+static void connected_cb(struct bt_conn *conn, uint8_t err) {
     if (err) {
-        LOG_ERR("Connection failed (err %u)", err);
+        LOG_ERR("Connect failed (err %u)", err);
         return;
     }
+    current_conn = bt_conn_ref(conn);
 
-    static struct bt_gatt_discover_params dp;
-    dp.uuid         = BT_UUID_HIDS_REPORT;
-    dp.func         = discover_cb;
-    dp.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
-    dp.end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE;
-    dp.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
-
-    int d_err = bt_gatt_discover(conn, &dp);
-    if (d_err) {
-        LOG_ERR("Discover failed: %d", d_err);
-    } else {
-        LOG_INF("Discovering Now Playing HID report");
-    }
+    // Start characteristic discovery
+    disc_params.uuid         = BT_UUID_HIDS_REPORT;
+    disc_params.func         = discover_char_cb;
+    disc_params.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
+    disc_params.end_handle   = BT_ATT_LAST_ATTRIBUTE_HANDLE;
+    disc_params.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
+    bt_gatt_discover(conn, &disc_params);
+    LOG_INF("Discovering HID report characteristic");
 }
 
-// 4) Disconnection callback: reset our subscribe state
-static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
-{
-    memset(&sub_params, 0, sizeof(sub_params));
+// Disconnection callback
+static void disconnected_cb(struct bt_conn *conn, uint8_t reason) {
+    if (current_conn) {
+        bt_conn_unref(current_conn);
+        current_conn = NULL;
+    }
+    memset(&subscribe_params, 0, sizeof(subscribe_params));
     LOG_INF("Disconnected (reason %u)", reason);
 }
 
-// 5) Register our BLE connection callbacks
 static struct bt_conn_cb conn_callbacks = {
     .connected    = connected_cb,
     .disconnected = disconnected_cb,
