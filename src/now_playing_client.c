@@ -58,6 +58,9 @@ static uint8_t discover_char_cb(struct bt_conn *conn,
     const struct bt_gatt_chrc *chrc = attr->user_data;
     subscribe_params.value_handle = chrc->value_handle;
 
+    // Log before starting CCCD discovery
+    LOG_INF("Looking for CCCD after HID Report char handle: 0x%04x", chrc->value_handle);
+
     // Kick off CCCD discovery
     static struct bt_gatt_discover_params dp_desc;
     dp_desc.uuid         = BT_UUID_GATT_CCC;
