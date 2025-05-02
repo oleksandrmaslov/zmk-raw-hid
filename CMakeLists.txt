@@ -14,4 +14,5 @@ if (CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 
   zephyr_include_directories(include)
   zephyr_include_directories(${APPLICATION_SOURCE_DIR}/include)
+  zephyr_include_directories(${CMAKE_CURRENT_LIST_DIR}/../../zmk-split-peripheral-output-relay/include)
 endif()
