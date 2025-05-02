@@ -20,18 +20,3 @@ static int now_playing_forwarder(const zmk_event_t *eh) {
 }
 ZMK_LISTENER(now_playing_forwarder, now_playing_forwarder);
 ZMK_SUBSCRIPTION(now_playing_forwarder, raw_hid_received_event);
-static int now_playing_forwarder(const zmk_event_t *eh) {
-    const struct raw_hid_received_event *evt = as_raw_hid_received_event(eh);
-    if (!evt) {
-        return ZMK_EV_EVENT_BUBBLE;
-    }
-
-    struct zmk_split_bt_output_relay_event out_ev = {
-        .relay_channel = 1,      // match your DTS relay-channel
-        .value         = evt->data[0],
-    };
-    zmk_split_bt_invoke_output(NULL, out_ev);
-    return ZMK_EV_EVENT_BUBBLE;
-}
-ZMK_LISTENER(now_playing_forwarder, now_playing_forwarder);
-ZMK_SUBSCRIPTION(now_playing_forwarder, raw_hid_received_event);
