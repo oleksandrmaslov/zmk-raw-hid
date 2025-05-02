@@ -1,6 +1,6 @@
-#include <zmk/event_manager.h>
-#include <zmk/events/raw_hid_received_event.h>
-#include <zmk/split/transport/central.h>
+#include <zephyr/kernel.h>            // if you need any Zephyr APIs
+#include <zmk/event_manager.h>        // for ZMK_LISTENER / ZMK_SUBSCRIPTION
+#include <raw_hid/raw_hid.h>          // defines raw_hid_received_event
 
 static int raw_hid_forwarder(const zmk_event_t *eh) {
     const struct raw_hid_received_event *evt = as_raw_hid_received_event(eh);
