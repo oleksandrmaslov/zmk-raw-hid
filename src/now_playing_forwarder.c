@@ -1,6 +1,6 @@
-#include <zmk/event_manager.h>           // ZMK_LISTENER / ZMK_SUBSCRIPTION
-#include <raw_hid/raw_hid.h>             // raw_hid_received_event + as_raw_hid_received_event
-#include <zmk/split/transport/central.h> // zmk_split_bt_output_relay_event + zmk_split_bt_invoke_output
+#include <zmk/event_manager.h>
+#include <raw_hid/events.h>
+#include <zmk/split/output-relay/central.h>
 
 static int now_playing_forwarder(const zmk_event_t *eh) {
     const struct raw_hid_received_event *evt = as_raw_hid_received_event(eh);
