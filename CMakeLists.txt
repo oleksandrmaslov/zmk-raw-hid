@@ -1,8 +1,13 @@
-cmake_minimum_required(VERSION 3.13.1)
-
 # Pull in Zephyr/ZMK boilerplate
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(zmk-raw-hid)
+
+if (NOT DEFINED ZEPHYR_EXTRA_MODULES)
+  set(ZEPHYR_EXTRA_MODULES "")
+endif()
+list(APPEND ZEPHYR_EXTRA_MODULES
+  "${CMAKE_CURRENT_LIST_DIR}/../zmk-split-peripheral-output-relay"
+  )
 
 if (CONFIG_RAW_HID)
   # Declare this as a Zephyr library
