@@ -1,13 +1,19 @@
-# Pull in Zephyr/ZMK boilerplate
+cmake_minimum_required(VERSION 3.13.1)
+
+# 1) Prepare ZMK_EXTRA_MODULES if it doesn't already exist
+if (NOT DEFINED ZMK_EXTRA_MODULES)
+  set(ZMK_EXTRA_MODULES "")
+endif()
+
+# 2) Register all your out-of-tree modules here, *before* find_package()
+#    Adjust paths relative to this file.
+list(APPEND ZMK_EXTRA_MODULES
+  "${CMAKE_CURRENT_LIST_DIR}/../../zmk-split-peripheral-output-relay"  # BadJeff’s relay repo
+)
+
+# 3) Now pull in Zephyr/ZMK — it will add_subdirectory() all modules
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(zmk-raw-hid)
-
-if (NOT DEFINED ZEPHYR_EXTRA_MODULES)
-  set(ZEPHYR_EXTRA_MODULES "")
-endif()
-list(APPEND ZEPHYR_EXTRA_MODULES
-  "${CMAKE_CURRENT_LIST_DIR}/../zmk-split-peripheral-output-relay"
-  )
 
 if (CONFIG_RAW_HID)
   # Declare this as a Zephyr library
