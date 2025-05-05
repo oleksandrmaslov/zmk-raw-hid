@@ -2,14 +2,19 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
+    - name: zzeneg
+      url-base: https://github.com/zzeneg
     - name: oleksandrmaslov
       url-base: https://github.com/oleksandrmaslov
-    # Additional modules containing boards/shields/custom code can be listed here as well
-    # See https://docs.zephyrproject.org/3.2.0/develop/west/manifest.html#projects
+    - name: badjeff
+      url-base: https://github.com/badjeff
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: main
       import: app/west.yml
+    - name: zmk-split-peripheral-output-relay
+      remote: oleksandrmaslov
+      revision: peripheral
   self:
     path: config
