@@ -79,10 +79,10 @@ static const struct hids_info hids_info_data = {
      const uint8_t *data = buf;
      LOG_DBG("BT HID ► Raw HID recv len=%u", len);
      LOG_HEXDUMP_DBG(data, len, "Raw HID data");
-     raise_raw_hid_received_event((struct raw_hid_received_event){
-         .data   = (uint8_t *)data,
-         .length = len,
-     });
+     struct raw_hid_received_event ev = {0};
+     ev.length = len;
+     memcpy(ev.data, data, ev.length);
+     raise_raw_hid_received_event(ev);
      return len;
  }
  
