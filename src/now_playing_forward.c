@@ -47,6 +47,12 @@ static int now_playing_hid_listener(const zmk_event_t *eh) {
             .payload_len = total_len,
         };
         memcpy(ev.payload, payload, total_len);
+        
+        LOG_DBG("NowPlaying→Split: chan=%d len=%d artist=\"%s\" title=\"%s\"",
+                    ev.relay_channel,
+                    ev.payload_len,
+                    curr_artist,
+                    curr_title);
 
         const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(now_playing_dev));
         zmk_split_bt_invoke_output(dev, ev);
