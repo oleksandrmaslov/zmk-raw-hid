@@ -35,7 +35,10 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
 
     LOG_INF("USB - Received Raw HID report of length %i", *len);
     LOG_HEXDUMP_DBG(*data, *len, "USB - Received Raw HID report");
-    raise_raw_hid_received_event((struct raw_hid_received_event){.data = *data, .length = *len});
+    struct raw_hid_received_event ev = {0};
+    ev.length = *len;
+    memcpy(ev.data, *data, ev.length);
+    raise_raw_hid_received_event(ev);
 
     return 0;
 }
