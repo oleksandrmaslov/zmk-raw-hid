@@ -2,7 +2,7 @@
 #include <zmk/split/output-relay/event.h>  // for zmk_split_bt_invoke_output
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
-#include <hid.c>
+#include <nice_view_hid/hid.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
