@@ -4,7 +4,7 @@ if (CONFIG_RAW_HID)
   zephyr_library_sources(src/events.c)
   zephyr_library_sources(src/usb_hid.c)
 
-  if (CONFIG_ZMK_BLE)
+  if (CONFIG_ZMK_BLE AND CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     zephyr_library_sources(src/hog.c)
   endif()
 
