@@ -48,6 +48,12 @@ static int now_playing_hid_listener(const zmk_event_t *eh) {
 
         /* Build the relay event */
         const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(now_playing_dev));
+        LOG_DBG("now_playing_dev node lookup → dev = %p", dev);
+        if (!dev || !device_is_ready(dev)) {
+            LOG_ERR("relay device not ready!");
+            return ZMK_EV_EVENT_BUBBLE;
+        }
+        LOG_DBG("relay device name = %s", dev->name);
         struct zmk_split_bt_output_relay_event ev;
         ev.relay_channel = NOW_PLAYING_CHANNEL;
         ev.payload_len = total_len;
