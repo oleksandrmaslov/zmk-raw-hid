@@ -50,8 +50,8 @@ static int now_playing_hid_listener(const zmk_event_t *eh) {
         const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(now_playing_dev));
         struct zmk_split_bt_output_relay_event ev;
         ev.relay_channel = NOW_PLAYING_CHANNEL;
-        ev.value = total_len;               // repurpose `value` to carry length of payload
-        memcpy(&ev.payload, payload, total_len);  // copy our payload after the struct
+        ev.payload_len = total_len;
+        memcpy(&ev.payload, payload, total_len);
 
         /* Enqueue the event to send via BLE */
         zmk_split_bt_invoke_output(dev, ev);
