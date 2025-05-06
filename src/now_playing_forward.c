@@ -1,7 +1,8 @@
 #include <raw_hid/events.h>
-#include <zmk/split/output-relay/event.h>
-#include <device.h>
-#include <string.h>
+#include <zmk/split/output-relay/event.h>  // for zmk_split_bt_invoke_output
+#include <zephyr/device.h>
+#include <zephyr/logging/log.h>
+#include <nice_view_hid/hid.h>
 
 #define NOW_PLAYING_CHANNEL 1
 
