@@ -1,6 +1,6 @@
-#include <device.h>
-#include <zmk/events/raw_hid.h>
-#include <zmk/split/output-relay.h>
+#include <zephyr/device.h>
+#include <zmk/raw-hid/raw_hid.h>
+#include <zmk/split/output-relay/event.h>
 #include <string.h>
 
 #define ARTIST_CH 10
