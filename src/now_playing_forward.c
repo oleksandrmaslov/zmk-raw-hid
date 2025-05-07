@@ -1,5 +1,5 @@
 #include <zephyr/device.h>
-#include <zmk/raw-hid/raw_hid.h>
+#include <raw-hid/raw_hid.h>
 #include <zmk/split/output-relay/event.h>
 #include <string.h>
 
