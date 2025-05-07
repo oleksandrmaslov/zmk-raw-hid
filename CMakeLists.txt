@@ -11,6 +11,10 @@ if (CONFIG_RAW_HID)
   if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     zephyr_library_sources(src/now_playing_forward.c)
   endif()
+  
+  if(NOT CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+    zephyr_library_sources(src/now_playing_peripheral.c)
+  endif()
 
   zephyr_include_directories(include)
   zephyr_include_directories(${APPLICATION_SOURCE_DIR}/include)
