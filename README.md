@@ -45,6 +45,40 @@ include:
     shield: molekula raw_hid_adapter
 ```
 
+### Forward Raw HID data to split peripherals
+
+To relay Raw HID packets over the ZMK split link, define an output relay device
+in the left/central `board.overlay` and reference it from the right/peripheral
+overlay. The relay channel must match the `CONFIG_RAW_HID_SPLIT_CHANNEL` option
+(defaults to `1`). An example configuration is shown below:
+
+```dts
+/* board_left.overlay */
+&split {
+    now_playing_dev: now_playing_dev {
+        compatible = "zmk,split-peripheral-output-relay";
+        device = <&split>;     /* virtual device used for relay */
+        relay-channel = <1>;
+    };
+};
+
+/* board_right.overlay */
+&split {
+    now_playing_dev: now_playing_dev {
+        compatible = "zmk,split-peripheral-output-relay";
+        device = <&split>;
+        relay-channel = <1>;
+    };
+};
+```
+
+When the central half receives Raw HID data (for example from
+`qmk-hid-host`), the module will forward the payload over the `now_playing_dev`
+relay device. On the peripheral side the
+`zmk-split-peripheral-output-relay` module converts the message into a
+`raw_hid_received_event`, which can be consumed by widgets such as
+`zmk-nice-view-hid` to show artist and track information.
+
 ## Adding support in other modules
 
 Subscribe to `raw_hid_received_event` and implement your own listener:
