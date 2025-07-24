@@ -25,7 +25,7 @@ config RAW_HID_SPLIT_CHANNEL
 choice
     prompt "Output relay length field"
     depends on RAW_HID && ZMK_SPLIT
-    default RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_LEN
+    default RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_SIZE
 
 config RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_LEN
     bool "payload_len"
