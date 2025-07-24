@@ -134,8 +134,20 @@ ZMK_SUBSCRIPTION(process_raw_hid_event, raw_hid_received_event);
 | `CONFIG_RAW_HID_REPORT_SIZE` | HID Report size (number of bytes) | 32      |
 | `CONFIG_RAW_HID_DEVICE`      | New HID device name               | HID_1   |
 | `CONFIG_RAW_HID_SPLIT_CHANNEL` | Output relay channel for Raw HID  | 1       |
-| `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_LEN` | Relay struct uses `payload_len` | y |
-| `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_SIZE` | Relay struct uses `payload_size` | n |
+| `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_LEN` | Relay struct uses `payload_len` | n |
+| `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_SIZE` | Relay struct uses `payload_size` | y |
+
+### Troubleshooting
+
+If your build fails with an error like:
+
+```
+error: 'struct zmk_split_bt_output_relay_event' has no member named 'payload_len'
+```
+
+ensure that **only** `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_SIZE=y` is set in
+your configuration. Older examples may still use the `payload_len` option, which
+does not work with recent versions of `zmk-split-peripheral-output-relay`.
 
 ## Thanks
 
