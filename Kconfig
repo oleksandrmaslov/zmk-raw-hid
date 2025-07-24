@@ -1,6 +1,5 @@
 config RAW_HID
     bool "Enable Raw HID"
-    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
     imply USB_DEVICE_HID
 
 config RAW_HID_USAGE_PAGE
@@ -18,3 +17,7 @@ config RAW_HID_REPORT_SIZE
 config RAW_HID_DEVICE
     string "Raw HID Device"
     default HID_1
+
+config RAW_HID_SPLIT_CHANNEL
+    int "Raw HID Split Relay Channel"
+    default 1
