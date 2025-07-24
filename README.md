@@ -30,6 +30,12 @@ manifest:
     - name: zmk-raw-hid # <-- new entry
       remote: zzeneg
       revision: main
+    - name: zmk-split-peripheral-output-relay # for split forwarding
+      remote: zzeneg
+      revision: peripheral
+    - name: zmk-nice-view-hid # display widget
+      remote: zzeneg
+      revision: peripheral-2
   self:
     path: config
 ```
@@ -44,6 +50,60 @@ include:
   - board: nice_nano_v2
     shield: molekula raw_hid_adapter
 ```
+
+### Forward Raw HID data to split peripherals
+
+To relay Raw HID packets over the ZMK split link, define an output relay device
+in the left/central `board.overlay` and reference it from the right/peripheral
+overlay. The relay channel must match the `CONFIG_RAW_HID_SPLIT_CHANNEL` option
+(defaults to `1`). An example configuration is shown below:
+
+```dts
+/* board_left.overlay - central */
+/ {
+    now_playing_dev: now_playing_dev {
+        compatible = "zmk,output-split-output-relay";
+        #binding-cells = <0>;
+    };
+
+    now_playing_relay: now_playing_relay {
+        compatible = "zmk,split-peripheral-output-relay";
+        device = <&now_playing_dev>;
+        relay-channel = <1>; /* must match CONFIG_RAW_HID_SPLIT_CHANNEL */
+    };
+};
+
+/* board_right.overlay - peripheral */
+/ {
+    now_playing_dev: now_playing_dev {
+        compatible = "zmk,output-split-output-relay";
+        #binding-cells = <0>;
+    };
+
+    now_playing_relay: now_playing_relay {
+        compatible = "zmk,split-peripheral-output-relay";
+        device = <&now_playing_dev>;
+        relay-channel = <1>;
+    };
+};
+```
+
+Ensure these nodes are defined at the root of each overlay. Do **not** place
+them under `&split_central` or `&split_peripheral` as those nodes are not
+standalone and will cause an "undefined node label 'split'" error.
+
+Depending on the version of `zmk-split-peripheral-output-relay` in use, the
+relay event structure may expose the length field as `payload_len` or
+`payload_size`. Select the matching option via
+`CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_LEN` or
+`CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_SIZE`.
+
+When the central half receives Raw HID data (for example from
+`qmk-hid-host`), the module will forward the payload over the `now_playing_dev`
+relay device. On the peripheral side the
+`zmk-split-peripheral-output-relay` module converts the message into a
+`raw_hid_received_event`, which can be consumed by widgets such as
+`zmk-nice-view-hid` to show artist and track information.
 
 ## Adding support in other modules
 
@@ -72,6 +132,9 @@ ZMK_SUBSCRIPTION(process_raw_hid_event, raw_hid_received_event);
 | `CONFIG_RAW_HID_USAGE`       | HID Usage                         | 0x61    |
 | `CONFIG_RAW_HID_REPORT_SIZE` | HID Report size (number of bytes) | 32      |
 | `CONFIG_RAW_HID_DEVICE`      | New HID device name               | HID_1   |
+| `CONFIG_RAW_HID_SPLIT_CHANNEL` | Output relay channel for Raw HID  | 1       |
+| `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_LEN` | Relay struct uses `payload_len` | y |
+| `CONFIG_RAW_HID_OUTPUT_RELAY_FIELD_PAYLOAD_SIZE` | Relay struct uses `payload_size` | n |
 
 ## Thanks
 
