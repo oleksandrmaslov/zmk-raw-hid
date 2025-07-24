@@ -105,6 +105,7 @@ relay device. On the peripheral side the
 `raw_hid_received_event`, which can be consumed by widgets such as
 `zmk-nice-view-hid` to show artist and track information.
 
+
 ## Adding support in other modules
 
 Subscribe to `raw_hid_received_event` and implement your own listener:
