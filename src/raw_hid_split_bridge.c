@@ -13,13 +13,12 @@ static int raw_hid_bridge_listener(const zmk_event_t *eh) {
 
     struct zmk_split_bt_output_relay_event relay = {
         .relay_channel = CONFIG_RAW_HID_SPLIT_CHANNEL,
-        .value = 0,
-        .payload_size = ev->length,
+        .payload_len = ev->length,
     };
-    if (relay.payload_size > CONFIG_ZMK_SPLIT_OUTPUT_RELAY_MAX_PAYLOAD_SIZE) {
-        relay.payload_size = CONFIG_ZMK_SPLIT_OUTPUT_RELAY_MAX_PAYLOAD_SIZE;
+    if (relay.payload_len > MAX_PAYLOAD_LEN) {
+        relay.payload_len = MAX_PAYLOAD_LEN;
     }
-    memcpy(relay.payload, ev->data, relay.payload_size);
+    memcpy(relay.payload, ev->data, relay.payload_len);
 
     const struct device *dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(now_playing_dev));
     if (dev) {

@@ -54,23 +54,29 @@ overlay. The relay channel must match the `CONFIG_RAW_HID_SPLIT_CHANNEL` option
 
 ```dts
 /* board_left.overlay */
-&split {
+&split_central {
     now_playing_dev: now_playing_dev {
         compatible = "zmk,split-peripheral-output-relay";
-        device = <&split>;     /* virtual device used for relay */
         relay-channel = <1>;
     };
 };
 
 /* board_right.overlay */
-&split {
+&split_peripheral {
     now_playing_dev: now_playing_dev {
         compatible = "zmk,split-peripheral-output-relay";
-        device = <&split>;
         relay-channel = <1>;
     };
 };
 ```
+
+When the central half receives Raw HID data (for example from
+`qmk-hid-host`), the module will forward the payload over the `now_playing_dev`
+relay device. On the peripheral side the
+`zmk-split-peripheral-output-relay` module converts the message into a
+`raw_hid_received_event`, which can be consumed by widgets such as
+`zmk-nice-view-hid` to show artist and track information.
+
 
 When the central half receives Raw HID data (for example from
 `qmk-hid-host`), the module will forward the payload over the `now_playing_dev`

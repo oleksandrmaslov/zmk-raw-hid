@@ -10,7 +10,7 @@ if (CONFIG_RAW_HID)
     endif()
   endif()
 
-  if (CONFIG_ZMK_SPLIT && CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+  if (CONFIG_ZMK_SPLIT AND CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     zephyr_library_sources(src/raw_hid_split_bridge.c)
   endif()
 
