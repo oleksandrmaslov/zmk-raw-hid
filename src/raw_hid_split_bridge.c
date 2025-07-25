@@ -33,8 +33,7 @@ static int raw_hid_bridge_listener(const zmk_event_t *eh) {
     ARG_UNUSED(ev);
 #endif
 
-const struct device *dev =
-    DEVICE_DT_GET_OR_NULL(DT_NODELABEL(nice_view_adapter));
+ const struct device *dev = device_get_binding(DT_LABEL(DT_NODELABEL(nice_view_adapter)));
     if (dev) {
         zmk_split_bt_invoke_output(dev, relay);
     }
