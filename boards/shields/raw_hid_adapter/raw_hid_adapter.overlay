@@ -1,0 +1,15 @@
+/
+{
+    nice_view_adapter: nice_view_adapter {
+        status = "okay";
+        compatible = "zmk,output-split-output-relay";
+        #binding-cells = <0>;
+    };
+
+    nice_view_adapter_cfg: nice_view_adapter_cfg {
+        status = "okay";
+        compatible = "zmk,split-peripheral-output-relay";
+        device = <&nice_view_adapter>;
+        relay-channel = <1>;
+    };
+};
