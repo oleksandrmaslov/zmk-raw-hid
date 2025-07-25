@@ -18,6 +18,10 @@ config RAW_HID_DEVICE
     string "Raw HID Device"
     default HID_1
 
+config RAW_HID_OUTPUT_RELAY_DEVICE
+    string "Raw HID Output Relay Device"
+    default "nice_view_adapter"
+
 config RAW_HID_SPLIT_CHANNEL
     int "Raw HID Split Relay Channel"
     default 1
