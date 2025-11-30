@@ -1,6 +1,6 @@
 config RAW_HID
     bool "Enable Raw HID"
-    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
+    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL || ZMK_SPLIT_ROLE_PERIPHERAL
     imply USB_DEVICE_HID
 
 config RAW_HID_USAGE_PAGE
@@ -18,3 +18,22 @@ config RAW_HID_REPORT_SIZE
 config RAW_HID_DEVICE
     string "Raw HID Device"
     default HID_1
+
+config RAW_HID_FORWARD_TO_PERIPHERAL
+    bool "Relay Raw HID reports to split peripheral over output relay"
+    depends on RAW_HID && ZMK_SPLIT && ZMK_SPLT_PERIPHERAL_OUTPUT_RELAY
+    default y
+    help
+      When enabled, Raw HID reports received on the central half are forwarded to
+      connected peripherals via the split peripheral output relay channel. The
+      peripheral can then surface the data (for example on a display).
+
+config RAW_HID_SPLIT_RELAY_CHANNEL
+    int "Relay channel used for Raw HID forwarding"
+    depends on RAW_HID_FORWARD_TO_PERIPHERAL
+    range 0 255
+    default 1
+    help
+      Relay channel identifier used when sending Raw HID payloads to peripherals.
+      The same channel must be handled on the peripheral side to consume the
+      forwarded data.
