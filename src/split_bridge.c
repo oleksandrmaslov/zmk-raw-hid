@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include <raw_hid/events.h>
 #include <zmk/event_manager.h>
 #include <zmk/split/output-relay/event.h>
@@ -21,8 +23,11 @@ static int raw_hid_split_forward_listener(const zmk_event_t *eh) {
 #else
     const uint8_t att_payload_max = 20; /* 23 - 3 */
 #endif
+    const uint8_t frame_overhead = offsetof(struct zmk_split_bt_output_relay_event, payload);
+    const uint8_t att_value_budget =
+        att_payload_max > frame_overhead ? att_payload_max - frame_overhead : 0;
     const uint8_t safe_payload_cap =
-        MIN((uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX, att_payload_max);
+        MIN((uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX, att_value_budget);
 
     uint8_t payload_size = MIN((uint8_t)event->length, safe_payload_cap);
 
