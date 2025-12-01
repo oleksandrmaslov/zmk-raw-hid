@@ -13,8 +13,16 @@ static int raw_hid_split_forward_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    uint8_t payload_size =
-        MIN((uint8_t)event->length, (uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX);
+    /* Use the real payload length, not the padded raw HID frame length. */
+    uint8_t payload_size = MIN((uint8_t)event->length,
+                               (uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX);
+
+    /* If the message carries its own length (media/title/artist), respect it. */
+    if (payload_size > 2 && event->data[1] > 0) {
+        uint8_t declared = event->data[1] + 2; /* type + len + data */
+        payload_size = MIN(payload_size, declared);
+    }
+
     if (payload_size == 0) {
         return ZMK_EV_EVENT_BUBBLE;
     }
