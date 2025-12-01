@@ -2,6 +2,7 @@
 #include <zmk/event_manager.h>
 #include <zmk/split/output-relay/event.h>
 
+#include <zephyr/bluetooth/att.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
@@ -14,8 +15,11 @@ static int raw_hid_split_forward_listener(const zmk_event_t *eh) {
     }
 
     /* Use the real payload length, not the padded raw HID frame length. */
-    uint8_t payload_size = MIN((uint8_t)event->length,
-                               (uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX);
+    const uint8_t att_payload_max = BT_ATT_DEFAULT_LE_MTU - 3; /* ATT header is 3 bytes */
+    const uint8_t safe_payload_cap =
+        MIN((uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX, att_payload_max);
+
+    uint8_t payload_size = MIN((uint8_t)event->length, safe_payload_cap);
 
     /* If the message carries its own length (media/title/artist), respect it. */
     if (payload_size > 2 && event->data[1] > 0) {
@@ -27,12 +31,24 @@ static int raw_hid_split_forward_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
+    uint8_t forward_buf[ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX] = {0};
+    memcpy(forward_buf, event->data, payload_size);
+
+    /* Adjust declared length if we truncated; avoid oversized strings on the peripheral. */
+    if (payload_size > 2) {
+        uint8_t declared_data_len = forward_buf[1];
+        uint8_t max_declared = payload_size - 2;
+        if (declared_data_len > max_declared) {
+            forward_buf[1] = max_declared;
+        }
+    }
+
     if (event->length > payload_size) {
         LOG_WRN("Raw HID payload truncated from %u to %u bytes", event->length, payload_size);
     }
 
     int err = zmk_split_bt_invoke_output_channel(CONFIG_RAW_HID_SPLIT_RELAY_CHANNEL,
-                                                 event->data[0], event->data, payload_size);
+                                                 forward_buf[0], forward_buf, payload_size);
     if (err) {
         LOG_ERR("Failed to forward Raw HID payload to peripheral (err %d)", err);
     }
