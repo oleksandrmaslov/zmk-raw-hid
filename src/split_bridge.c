@@ -15,7 +15,12 @@ static int raw_hid_split_forward_listener(const zmk_event_t *eh) {
     }
 
     /* Use the real payload length, not the padded raw HID frame length. */
+    /* Default ATT MTU is 23 unless negotiated; assume 23 to keep writes safe. */
+#ifdef BT_ATT_DEFAULT_LE_MTU
     const uint8_t att_payload_max = BT_ATT_DEFAULT_LE_MTU - 3; /* ATT header is 3 bytes */
+#else
+    const uint8_t att_payload_max = 20; /* 23 - 3 */
+#endif
     const uint8_t safe_payload_cap =
         MIN((uint8_t)ZMK_SPLIT_PERIPHERAL_OUTPUT_PAYLOAD_MAX, att_payload_max);
 
